@@ -1,0 +1,34 @@
+services:
+  config-server:
+    container_name: config-server
+    image: config-server:1.0-SNAPSHOT
+    pull_policy: never
+    ports:
+      - "8888:8888"
+    environment:
+      THC_PORT: "8888"
+      THC_PATH: /actuator/health
+    healthcheck:
+      test: ["CMD", "/workspace/health-check"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+  discovery-server:
+    container_name: discovery-server
+    image: discovery-server:1.0-SNAPSHOT
+    pull_policy: never
+    ports:
+      - "8761:8761"
+    environment:
+      THC_PORT: "8761"
+      THC_PATH: /actuator/health
+    depends_on:
+      config-server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "/workspace/health-check"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
