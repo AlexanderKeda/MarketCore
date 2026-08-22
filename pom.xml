@@ -50,10 +50,32 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
-
+                <executions>
+                    <execution>
+                        <id>build-docker-image</id>
+                        <phase>install</phase>
+                        <goals>
+                            <goal>build-image-no-fork</goal>
+                        </goals>
+                    </execution>
+                </executions>
                 <configuration>
                     <image>
                         <name>${project.artifactId}:${project.version}</name>
+                        <builder>
+                            paketobuildpacks/builder-noble-java-tiny:0.0.173
+                        </builder>
+                        <env>
+                            <BP_HEALTH_CHECKER_ENABLED>true</BP_HEALTH_CHECKER_ENABLED>
+                        </env>
+                        <buildpacks>
+                            <buildpack>
+                                urn:cnb:builder:paketo-buildpacks/java
+                            </buildpack>
+                            <buildpack>
+                                docker://docker.io/paketobuildpacks/health-checker:2.13.4
+                            </buildpack>
+                        </buildpacks>
                     </image>
                 </configuration>
             </plugin>

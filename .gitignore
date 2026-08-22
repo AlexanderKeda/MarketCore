@@ -4,6 +4,9 @@ target/
 !**/src/test/**/target/
 .kotlin
 
+### Maven ###
+.mvn/maven.config
+
 ### IntelliJ IDEA ###
 **/.idea
 *.iws
