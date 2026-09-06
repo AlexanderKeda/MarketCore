@@ -75,3 +75,17 @@ services:
       timeout: 5s
       retries: 3
       start_period: 20s
+
+  keycloak:
+    container_name: keycloak
+    image: quay.io/keycloak/keycloak:26.7.2
+    volumes:
+      - ./keycloak/import:/opt/keycloak/data/import
+    command:
+      - start-dev
+      - "--import-realm"
+    ports:
+      - "8090:8080"
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
