@@ -1,0 +1,34 @@
+<mxfile host="app.diagrams.net">
+  <diagram id="catalog-er" name="CatalogDB">
+    <mxGraphModel dx="1600" dy="1100" grid="1" gridSize="10" page="1" pageWidth="1600" pageHeight="1100">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" value="Catalog Service / PostgreSQL — проект схемы&#xA;Все поля NOT NULL. PK: первичный ключ; FK: внешний ключ; UQ: уникальность.&#xA;Точные CHECK, defaults, индексы и триггеры — schema.sql; транзакции — README.md." vertex="1" parent="1" style="rounded=0;whiteSpace=wrap;html=0;align=left;verticalAlign=top;spacing=14;fontSize=16;fontFamily=Helvetica;fillColor=#f1f5f9;strokeColor=#64748b;">
+          <mxGeometry x="40" height="100" y="20" as="geometry" width="1500" />
+        </mxCell>
+        <mxCell id="category" value="category&#xA;────────────────────────&#xA;id : uuid [PK]&#xA;name : text [UQ]&#xA;&#xA;Плоский справочник&#xA;Название непустое" vertex="1" parent="1" style="rounded=0;whiteSpace=wrap;html=0;align=left;verticalAlign=top;spacing=14;fontSize=16;fontFamily=Helvetica;fillColor=#dbeafe;strokeColor=#64748b;">
+          <mxGeometry x="40" height="240" y="220" as="geometry" width="320" />
+        </mxCell>
+        <mxCell id="product" value="product&#xA;────────────────────────&#xA;id : uuid [PK]&#xA;seller_id : uuid [внешняя ссылка]&#xA;category_id : uuid [FK → category.id]&#xA;name : text&#xA;description : jsonb&#xA;price : numeric (BYN, &gt; 0, шаг 0.01)&#xA;available_quantity : bigint (≥ 0)&#xA;status : text (ACTIVE | HIDDEN)&#xA;created_at : timestamptz&#xA;updated_at : timestamptz&#xA;&#xA;Поля общего резерва НЕТ.&#xA;HIDDEN ⇒ available_quantity = 0" vertex="1" parent="1" style="rounded=0;whiteSpace=wrap;html=0;align=left;verticalAlign=top;spacing=14;fontSize=16;fontFamily=Helvetica;fillColor=#dcfce7;strokeColor=#64748b;">
+          <mxGeometry x="470" height="470" y="220" as="geometry" width="460" />
+        </mxCell>
+        <mxCell id="reservation" value="reservation&#xA;────────────────────────&#xA;order_id : uuid [PK = UNIQUE(order_id)]&#xA;product_id : uuid [FK → product.id]&#xA;quantity : bigint&#xA;unit_price : numeric (BYN, &gt; 0, шаг 0.01)&#xA;status : text&#xA;created_at : timestamptz&#xA;updated_at : timestamptz&#xA;&#xA;RESERVED → IN_DELIVERY → COMPLETED&#xA;RESERVED / IN_DELIVERY → CANCELLED&#xA;&#xA;CANCELLED: quantity = 0&#xA;Остальные: quantity &gt; 0&#xA;Конечные записи сохраняются." vertex="1" parent="1" style="rounded=0;whiteSpace=wrap;html=0;align=left;verticalAlign=top;spacing=14;fontSize=16;fontFamily=Helvetica;fillColor=#fef3c7;strokeColor=#64748b;">
+          <mxGeometry x="1040" height="490" y="220" as="geometry" width="500" />
+        </mxCell>
+        <mxCell id="external" value="Логические ссылки (без FK между БД)&#xA;seller_id = UUID Keycloak / User Service&#xA;order_id = UUID заказа Order Service&#xA;Отдельный UUID резерва не нужен." vertex="1" parent="1" style="rounded=0;whiteSpace=wrap;html=0;align=left;verticalAlign=top;spacing=14;fontSize=16;fontFamily=Helvetica;fillColor=#f1f5f9;strokeColor=#64748b;">
+          <mxGeometry x="40" height="150" y="750" as="geometry" width="570" />
+        </mxCell>
+        <mxCell id="rules" value="Вычисляемый резерв: SUM(quantity) для RESERVED + IN_DELIVERY.&#xA;Создание: остаток −q. Доставка/завершение: остаток без изменений.&#xA;Отмена: остаток +q, quantity = 0, статус CANCELLED — атомарно.&#xA;Скрытие: остаток 0 и нет RESERVED/IN_DELIVERY (локальная проверка).&#xA;Карточки физически не удаляются; JSON null разрешён, SQL NULL запрещён." vertex="1" parent="1" style="rounded=0;whiteSpace=wrap;html=0;align=left;verticalAlign=top;spacing=14;fontSize=16;fontFamily=Helvetica;fillColor=#f1f5f9;strokeColor=#64748b;">
+          <mxGeometry x="650" height="190" y="750" as="geometry" width="890" />
+        </mxCell>
+        <mxCell id="category_product" source="category" target="product" value="1 → 0..N" edge="1" parent="1" style="edgeStyle=orthogonalEdgeStyle;html=0;startArrow=ERone;endArrow=ERmany;exitX=1;exitY=0.35;entryX=0;entryY=0.35;fontSize=15;labelBackgroundColor=#ffffff;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="product_reservation" source="product" target="reservation" value="1 → 0..N" edge="1" parent="1" style="edgeStyle=orthogonalEdgeStyle;html=0;startArrow=ERone;endArrow=ERmany;exitX=1;exitY=0.35;entryX=0;entryY=0.35;fontSize=15;labelBackgroundColor=#ffffff;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

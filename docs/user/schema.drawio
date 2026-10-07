@@ -1,0 +1,37 @@
+<mxfile host="app.diagrams.net">
+  <diagram id="user-er" name="UserDB">
+    <mxGraphModel grid="1" gridSize="10" page="1" pageWidth="1400" pageHeight="1000">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" value="User Service / PostgreSQL — проект схемы&#xA;Одна таблица полных профилей. Все поля NOT NULL. PK — первичный ключ; UQ — уникальность.&#xA;Пунктир — логические связи с другими системами, не внешние ключи БД." parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=0;align=left;verticalAlign=top;spacing=14;fontSize=16;fontFamily=Helvetica;fillColor=#f1f5f9;strokeColor=#64748b;">
+          <mxGeometry height="100" width="1320" y="20" x="30" as="geometry" />
+        </mxCell>
+        <mxCell id="profile" value="user_service.user_profile&#xA;────────────────────────────&#xA;id : uuid [PK, неизменяемый]&#xA;first_name : text&#xA;last_name : text&#xA;email : text [UQ, нормализованный]&#xA;address : text&#xA;payment_account_id : uuid [НЕ UNIQUE]&#xA;role : text [BUYER | SELLER, неизменяемая]&#xA;created_at : timestamptz&#xA;updated_at : timestamptz&#xA;&#xA;Один адрес и один счёт на профиль.&#xA;Один счёт может повторяться у разных профилей.&#xA;Имя, фамилия и адрес — непустые строки.&#xA;created_at и updated_at: default CURRENT_TIMESTAMP." parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=0;align=left;verticalAlign=top;spacing=14;fontSize=16;fontFamily=Helvetica;fillColor=#dcfce7;strokeColor=#64748b;">
+          <mxGeometry height="470" width="590" y="180" x="430" as="geometry" />
+        </mxCell>
+        <mxCell id="keycloak" value="Keycloak (внешняя система)&#xA;&#xA;UUID = user_profile.id&#xA;Email и роль должны совпадать.&#xA;Пароли и JWT не хранятся в UserDB." parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=0;align=left;verticalAlign=top;spacing=14;fontSize=16;fillColor=#dbeafe;strokeColor=#64748b;">
+          <mxGeometry height="190" width="320" y="190" x="30" as="geometry" />
+        </mxCell>
+        <mxCell id="payment" value="Payment Service (внешняя БД)&#xA;&#xA;UUID счёта = payment_account_id&#xA;Баланс и операции принадлежат Payment.&#xA;Связь: много профилей → один счёт." parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=0;align=left;verticalAlign=top;spacing=14;fontSize=16;fontFamily=Helvetica;fillColor=#fef3c7;strokeColor=#64748b;">
+          <mxGeometry height="180" width="320" y="710" x="1030" as="geometry" />
+        </mxCell>
+        <mxCell id="consumers" value="Catalog / Order Service&#xA;&#xA;Используют UUID профиля.&#xA;Данные получают через API.&#xA;Прямого доступа к UserDB нет." parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=0;align=left;verticalAlign=top;spacing=14;fontSize=16;fontFamily=Helvetica;fillColor=#dbeafe;strokeColor=#64748b;">
+          <mxGeometry height="190" width="320" y="460" x="30" as="geometry" />
+        </mxCell>
+        <mxCell id="notes" value="Правила&#xA;Email: нижний регистр, без пробельных символов, уникален для обеих ролей.&#xA;updated_at меняется только при фактическом изменении; отдельной истории нет.&#xA;Нет отчества, фирмы, статуса профиля, реквизитов карт и таблицы балансов.&#xA;Начальные профили — отдельной миграцией с данными Keycloak.&#xA;Точные ограничения и триггер — schema.sql; детали — README.md." parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=0;align=left;verticalAlign=top;spacing=14;fontSize=16;fontFamily=Helvetica;fillColor=#f1f5f9;strokeColor=#64748b;">
+          <mxGeometry height="200" width="940" y="730" x="30" as="geometry" />
+        </mxCell>
+        <mxCell parent="1" value="1 ↔ 1" target="profile" style="edgeStyle=orthogonalEdgeStyle;dashed=1;html=0;fontSize=14;labelBackgroundColor=#ffffff;endArrow=open;" id="identity" edge="1" source="keycloak">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell parent="1" value="N → 1" target="payment" style="edgeStyle=orthogonalEdgeStyle;dashed=1;html=0;fontSize=14;labelBackgroundColor=#ffffff;endArrow=open;" id="account" edge="1" source="profile">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell parent="1" value="UUID / API" target="profile" style="edgeStyle=orthogonalEdgeStyle;dashed=1;html=0;fontSize=14;labelBackgroundColor=#ffffff;endArrow=open;" id="read" edge="1" source="consumers">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

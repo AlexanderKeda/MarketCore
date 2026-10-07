@@ -1,0 +1,242 @@
+openapi: 3.0.4
+info:
+  title: MarketCore User Service API
+  version: 1.0.0
+  description: |
+    Межсервисный API чтения данных покупателей и продавцов для UC-07.
+    Доступ разрешён Order Service со служебным JWT Keycloak и правом чтения профилей.
+    Пользовательский JWT сам по себе не предоставляет доступ к этим операциям.
+    Точные имена служебных ролей и claims будут определены при настройке авторизации.
+    URL операций указан относительно базового адреса User Service.
+    Регистрация, редактирование и просмотр собственного профиля пользователем
+    в этот контракт не входят.
+tags:
+  - name: Buyers
+    description: Данные покупателя для оформления заказа.
+  - name: Sellers
+    description: Данные продавца для выплаты по заказу.
+security:
+  - serviceBearerAuth: []
+paths:
+  /buyers/{buyerId}:
+    get:
+      tags: [Buyers]
+      operationId: getBuyerById
+      summary: Получить данные покупателя
+      description: |
+        UC-07: Order Service получает адрес доставки и UUID платёжного счёта покупателя.
+        Если UUID принадлежит продавцу, возвращается 404 BUYER_NOT_FOUND.
+      parameters:
+        - name: buyerId
+          in: path
+          required: true
+          description: UUID покупателя, совпадающий с UUID пользователя Keycloak.
+          schema:
+            type: string
+            format: uuid
+          example: 550e8400-e29b-41d4-a716-446655440000
+      responses:
+        '200':
+          description: Данные покупателя.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BuyerResponse'
+              example:
+                id: 550e8400-e29b-41d4-a716-446655440000
+                address: 'Учебный адрес доставки, дом 1'
+                paymentAccountId: 550e8400-e29b-41d4-a716-446655440001
+        '400':
+          $ref: '#/components/responses/InvalidUuid'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/AccessDenied'
+        '404':
+          description: Покупатель не найден, в том числе если UUID принадлежит продавцу. Код BUYER_NOT_FOUND.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: Покупатель с указанным UUID не найден
+                code: BUYER_NOT_FOUND
+                path: /buyers/550e8400-e29b-41d4-a716-446655440000
+                timestamp: '2026-09-14T12:30:45.123Z'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+  /sellers/{sellerId}:
+    get:
+      tags: [Sellers]
+      operationId: getSellerById
+      summary: Получить данные продавца
+      description: |
+        UC-07: Order Service получает актуальный UUID счёта продавца перед выплатой.
+        Если UUID принадлежит покупателю, возвращается 404 SELLER_NOT_FOUND.
+      parameters:
+        - name: sellerId
+          in: path
+          required: true
+          description: UUID продавца, совпадающий с UUID пользователя Keycloak.
+          schema:
+            type: string
+            format: uuid
+          example: 550e8400-e29b-41d4-a716-446655440002
+      responses:
+        '200':
+          description: Данные продавца.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SellerResponse'
+              example:
+                id: 550e8400-e29b-41d4-a716-446655440002
+                paymentAccountId: 550e8400-e29b-41d4-a716-446655440003
+        '400':
+          $ref: '#/components/responses/InvalidUuid'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/AccessDenied'
+        '404':
+          description: Продавец не найден, в том числе если UUID принадлежит покупателю. Код SELLER_NOT_FOUND.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: Продавец с указанным UUID не найден
+                code: SELLER_NOT_FOUND
+                path: /sellers/550e8400-e29b-41d4-a716-446655440002
+                timestamp: '2026-09-14T12:30:45.123Z'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+components:
+  securitySchemes:
+    serviceBearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Служебный JWT Keycloak для Order Service с правом чтения профилей.
+  schemas:
+    BuyerResponse:
+      type: object
+      required: [id, address, paymentAccountId]
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: UUID покупателя, совпадающий с UUID пользователя Keycloak.
+        address:
+          type: string
+          minLength: 1
+          pattern: '\S'
+          description: Адрес доставки одной строкой; не пустой и не состоящий только из пробелов.
+        paymentAccountId:
+          type: string
+          format: uuid
+          description: UUID платёжного счёта покупателя.
+    SellerResponse:
+      type: object
+      required: [id, paymentAccountId]
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: UUID продавца, совпадающий с UUID пользователя Keycloak.
+        paymentAccountId:
+          type: string
+          format: uuid
+          description: Актуальный UUID платёжного счёта продавца.
+    ErrorResponse:
+      type: object
+      description: |
+        Единый формат ошибки MarketCore. Все четыре поля обязательны и не допускают null.
+        HTTP-статус передаётся в ответе HTTP. Клиент обрабатывает code;
+        текст message может изменяться. Ответ не содержит внутренних технических подробностей.
+      required: [message, code, path, timestamp]
+      properties:
+        message:
+          type: string
+          minLength: 1
+          description: Описание ошибки для человека.
+        code:
+          type: string
+          minLength: 1
+          description: Стабильный строковый код; допустимый для ответа код указан в его описании.
+        path:
+          type: string
+          minLength: 1
+          description: Путь запроса, при котором возникла ошибка, без query-параметров.
+        timestamp:
+          type: string
+          format: date-time
+          pattern: 'Z$'
+          description: Время возникновения ошибки в ISO 8601, UTC с суффиксом Z.
+          example: '2026-09-14T12:30:45.123Z'
+  responses:
+    InvalidUuid:
+      description: Идентификатор в пути имеет неверный формат UUID. Код INVALID_UUID.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            message: Идентификатор должен иметь формат UUID
+            code: INVALID_UUID
+            path: /buyers/not-a-uuid
+            timestamp: '2026-09-14T12:30:45.123Z'
+    Unauthorized:
+      description: JWT отсутствует, просрочен или недействителен. Код UNAUTHORIZED.
+      headers:
+        WWW-Authenticate:
+          description: Обязательный заголовок с Bearer challenge.
+          schema:
+            type: string
+          example: Bearer
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            message: Требуется действительный служебный JWT
+            code: UNAUTHORIZED
+            path: /buyers/550e8400-e29b-41d4-a716-446655440000
+            timestamp: '2026-09-14T12:30:45.123Z'
+    AccessDenied:
+      description: JWT действителен, но вызывающий не имеет права читать профили через эту операцию. Код ACCESS_DENIED.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            message: Недостаточно прав для чтения профиля
+            code: ACCESS_DENIED
+            path: /buyers/550e8400-e29b-41d4-a716-446655440000
+            timestamp: '2026-09-14T12:30:45.123Z'
+    InternalError:
+      description: Непредвиденная ошибка сервиса. Код INTERNAL_ERROR.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            message: Внутренняя ошибка сервиса
+            code: INTERNAL_ERROR
+            path: /buyers/550e8400-e29b-41d4-a716-446655440000
+            timestamp: '2026-09-14T12:30:45.123Z'
+    ServiceUnavailable:
+      description: Сервис временно не может предоставить данные. Код SERVICE_UNAVAILABLE.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            message: Сервис временно недоступен
+            code: SERVICE_UNAVAILABLE
+            path: /buyers/550e8400-e29b-41d4-a716-446655440000
+            timestamp: '2026-09-14T12:30:45.123Z'
