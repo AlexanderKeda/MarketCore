@@ -40,3 +40,5 @@ build/
 
 out/
 *.log
+
+docs/codex
